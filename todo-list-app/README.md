@@ -75,6 +75,11 @@ Before running the application, ensure to set up your environment variables for 
 
 3. Access todo routes (protected):
    - Ensure to include the JWT token in the Authorization header for requests to todo routes.
-
-## License
-This project is licensed under the MIT License.
+- **Get All Todos**
+- `GET /todos`
+- **Create Todo**
+- `POST /todos`
+- **Update Todo**
+- `PUT /todos/:id`
+- **Delete Todo**
+- `DELETE /todos/:id`

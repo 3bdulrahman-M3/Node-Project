@@ -1,44 +1,40 @@
-const { Pool } = require('pg');
-const config = require('../config');
+const mongoose = require('mongoose');
 
-const pool = new Pool({
-    host: config.database.host,
-    port: config.database.port,
-    user: config.database.user,
-    password: config.database.password,
-    database: config.database.dbName,
-});
+const todoSchema = new mongoose.Schema({
+  image: String,
+  title: { type: String, required: true },
+  description: String,
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+  dueDate: Date
+}, { timestamps: true });
 
-class Todo {
-    static async getAll() {
-        const result = await pool.query('SELECT id, image, title, description, priority, "dueDate" FROM todos ORDER BY id ASC');
-        return result.rows;
-    }
+const Todo = mongoose.model('Todo', todoSchema);
 
-    static async getById(id) {
-        const result = await pool.query('SELECT id, image, title, description, priority, "dueDate" FROM todos WHERE id = $1', [id]);
-        return result.rows[0];
-    }
+class TodoModel {
+  static async getAll() {
+    return Todo.find().sort({ _id: 1 });
+  }
 
-    static async create(image, title, description, priority, dueDate) {
-        const result = await pool.query(
-            'INSERT INTO todos (image, title, description, priority, "dueDate") VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [image, title, description, priority, dueDate]
-        );
-        return result.rows[0];
-    }
+  static async getById(id) {
+    return Todo.findById(id);
+  }
 
-    static async update(id, image, title, description, priority, dueDate) {
-        const result = await pool.query(
-            'UPDATE todos SET image = $1, title = $2, description = $3, priority = $4, "dueDate" = $5 WHERE id = $6 RETURNING *',
-            [image, title, description, priority, dueDate, id]
-        );
-        return result.rows[0];
-    }
+  static async create(image, title, description, priority, dueDate) {
+    const todo = new Todo({ image, title, description, priority, dueDate });
+    return todo.save();
+  }
 
-    static async delete(id) {
-        await pool.query('DELETE FROM todos WHERE id = $1', [id]);
-    }
+  static async update(id, image, title, description, priority, dueDate) {
+    return Todo.findByIdAndUpdate(
+      id,
+      { image, title, description, priority, dueDate },
+      { new: true }
+    );
+  }
+
+  static async delete(id) {
+    return Todo.findByIdAndDelete(id);
+  }
 }
 
-module.exports = Todo;
+module.exports = TodoModel;

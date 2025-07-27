@@ -1,33 +1,36 @@
-const { Pool } = require('pg');
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const config = require('../config');
 
-const pool = new Pool({
-    host: config.database.host,
-    port: config.database.port,
-    user: config.database.user,
-    password: config.database.password,
-    database: config.database.dbName,
+const userSchema = new mongoose.Schema({
+  phone: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  displayName: String,
+  experienceYears: Number,
+  address: String,
+  level: String
+}, { timestamps: true });
+
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-class User {
-    static async create({ phone, password, displayName, experienceYears, address, level }) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await pool.query(
-            'INSERT INTO users (phone, password, "displayName", "experienceYears", address, level) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [phone, hashedPassword, displayName, experienceYears, address, level]
-        );
-        return result.rows[0];
-    }
+const User = mongoose.model('User', userSchema);
 
-    static async findByPhone(phone) {
-        const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
-        return result.rows[0];
-    }
+class UserModel {
+  static async create({ phone, password, displayName, experienceYears, address, level }) {
+    const user = new User({ phone, password, displayName, experienceYears, address, level });
+    return user.save();
+  }
 
-    static async comparePassword(plainPassword, hashedPassword) {
-        return bcrypt.compare(plainPassword, hashedPassword);
-    }
+  static async findByPhone(phone) {
+    return User.findOne({ phone });
+  }
+
+  static async comparePassword(plainPassword, hashedPassword) {
+    return bcrypt.compare(plainPassword, hashedPassword);
+  }
 }
 
-module.exports = User;
+module.exports = UserModel;

@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const config = require('../config');
 
 const registerUser = async (req, res) => {
     const { phone, password, displayName, experienceYears, address, level } = req.body;
@@ -37,9 +36,9 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         const token = jwt.sign(
-            { id: user.id, phone: user.phone },
-            config.jwtSecret,
-            { expiresIn: config.jwtExpiration }
+            { id: user._id, phone: user.phone },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRATION }
         );
         res.status(200).json({
             message: 'Login successful',
